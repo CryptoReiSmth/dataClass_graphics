@@ -1,10 +1,13 @@
 import sys
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QCheckBox, QDialog, QVBoxLayout, QHBoxLayout, QMainWindow
+from PyQt5.QtGui import QColor
 import pyqtgraph as pg
 from dataclasses import dataclass
+from random import randint
 
-
+# TODO: Заполнить списком цветов
+colors = ["r"] * 100
 @dataclass
 class KZPowerREG:
     UC: float = 0
@@ -47,10 +50,12 @@ class MainWindow(QDialog):
 
         # Структура, данные которой отображаются на графике
         self.data_line = []
+        self.pen = []
 
         # Массив чек боксов
         self.choice_button = []
         self.dictionary = data_class_dict
+
         # Заполняет массив кнопок
         for key in self.dictionary.keys():
             if type(self.dictionary.get(key)) == type(0):
@@ -60,21 +65,45 @@ class MainWindow(QDialog):
                 for key_item in key_values:
                     self.choice_button.append(QCheckBox(f"{key}: {key_item}"))
 
-        # Add elements to layout
+        num_of_lines = 0
+        layout_h = QHBoxLayout()
         layout_v = QVBoxLayout()
+        # Добавляем кнопки на экран
+        # и хорошо считаем количество выводимых параметров (aka линий aka кнопок)
         for button in self.choice_button:
             layout_v.addWidget(button)
+            num_of_lines += 1
 
-        self.setLayout(layout_v)
+        # Делаем разные (нет) цвета линий и маркеров
+        for i in range(num_of_lines):
+            line_color = colors[i]
+            self.pen.append(pg.mkPen(color = line_color))
+            self.data_line.append(self.graphWidget.plot([i], [i+2], pen = self.pen[i], symbol='+', symbolSize=10, symbolBrush=line_color))
+
+        layout_h.addWidget(self.graphWidget)
+        layout_h.addLayout(layout_v)
+        self.setLayout(layout_h)
 
 
 if __name__ == '__main__':
     test = KZTelemetryREG(KZPowerREG(), KZPowerREG())
     app = QtWidgets.QApplication(sys.argv)
-    d = test.__dict__
+    dataClass_dict = test.__dict__
+    test.temperature = 1111111111
 
-    w = MainWindow(test.__dict__)
+    """print(dataClass_dict)
+    count = 0
+    for key in dataClass_dict.keys():
+        if isinstance(dataClass_dict.get(key), int):
+            print(f"key = {key}, value = {dataClass_dict.get(key)}")
+            count += 1
+        else:
+            dataclass_key_dict = dataClass_dict.get(key).__dict__
+            print(f"\n\n\ndataclass_key_dict  = {dataclass_key_dict}\n")
+            for k in dataclass_key_dict.keys():
+                print(f"dataclass: {dataClass_dict.get(key)}, key: {key}_{k}, value: {dataclass_key_dict.get(k)}")
+                count += 1
+    print(f"count = {count}")"""
+    w = MainWindow(dataClass_dict)
     w.show()
     sys.exit(app.exec_())
-
-
