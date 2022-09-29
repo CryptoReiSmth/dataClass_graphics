@@ -1,7 +1,6 @@
 import sys
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QCheckBox, QDialog, QVBoxLayout, QHBoxLayout, QMainWindow
-from PyQt5.QtGui import QColor
 import pyqtgraph as pg
 from dataclasses import dataclass
 from random import randint
@@ -35,7 +34,7 @@ class KZTelemetryREG:
 class MainWindow(QDialog):
     def __init__(self, data_class_dict: dict):
         super(QDialog, self).__init__()
-
+        self.setGeometry(200, 50, 1500, 950)
         # Create cool window
         self.graphWidget = pg.PlotWidget()
         self.graphWidget.setBackground('w')
@@ -50,7 +49,7 @@ class MainWindow(QDialog):
 
         # Данные для графика
         # Массив с массивом значений (длина y = num_of_lines)
-        #                             длина каждого y[i] = число значений)
+        #                            (длина каждого y[i] = число значений)
         self.y = []         # - двумерный
         self.x = []         # - одномерный
         # Отображаемые значения
@@ -80,7 +79,7 @@ class MainWindow(QDialog):
         # Добавляем кнопки на экран
         # и хорошо считаем количество выводимых параметров (aka линий aka кнопок)
         for button in self.choice_buttons:
-            button.setChecked(True)
+            button.setChecked(False)
             layout_v.addWidget(button)
             num_of_lines += 1
 
@@ -95,18 +94,12 @@ class MainWindow(QDialog):
         self.setLayout(layout_h)
 
         # TODO: записать данные из data-Class
-        self.y = [] # - одномерный
+        self.y = [] # - двумерный
         self.x = [i for i in range(num_of_lines)]  # - одномерный
         for i in range(num_of_lines):
             self.y.append(self.x)
             self.shown_x.append(self.x)
-
-
-        self.shown_y = self.y
-
-        #for i in range(len(self.y)):
-        #    print(f"self.y[i] = {self.y[i]}, self.shown_y[i] = {self.shown_y[i]}")
-
+        self.shown_y = self.y.copy()
 
         # Set update settings
         self.timer = QtCore.QTimer()
@@ -120,22 +113,17 @@ class MainWindow(QDialog):
         for i in range(len(self.y)):
             self.y[i] = self.y[i][1:]
             self.y[i].append(randint(0, 20))  # TODO: добавлять значения из data-Class
-            #print(f"1 - len(shown_y[{i}]) = {len(self.shown_y[i])}, len(y[{i}]) = {len(self.y[i])}")
         for i in range(len(self.choice_buttons)):
             button = self.choice_buttons[i]
             if button.isChecked():
-                #print(f"2 - len(shown_y[{i}]) = {len(self.shown_y[i])}, len(y[{i}]) = {len(self.y[i])}")
-                self.shown_x[i] = self.x
-                self.shown_y[i] = self.y[i]
-
+                self.shown_x[i] = self.x.copy()
+                self.shown_y[i] = self.y[i].copy()
             else:
                 self.shown_x[i] = []
                 self.shown_y[i] = []
 
         for i in range(len(self.data_lines)):
-            #print(f"self.shown_x[{i}] = {self.shown_x[i]}, self.shown_y[{i}] = {self.shown_y[i]}")
             self.data_lines[i].setData(self.shown_x[i], self.shown_y[i])
-
 
 
 if __name__ == '__main__':
