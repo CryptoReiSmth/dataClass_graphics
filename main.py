@@ -10,31 +10,36 @@ colors = ["aqua", "orange", "hotpink", "lightslategray", "yellow", "springgreen"
 @dataclass
 class KZPowerREG:
     UC: float = 0
-    UC_raw : int = 0
+    UC_raw: int = 0
     I1: float = 0
-    I1_raw : int = 0
+    I1_raw: int = 0
     UL: float = 0
-    UL_raw : int = 0
+    UL_raw: int = 0
     IL: float = 0
-    IL_raw : int = 0
+    IL_raw: int = 0
     _27V: float = 0
-    _27V_raw : int = 0
+    _27V_raw: int = 0
     U1: float = 0
-    U1_raw : int = 0
+    U1_raw: int = 0
 
 
 @dataclass
 class KZTelemetryREG:
-    IR: KZPowerREG
-    UV: KZPowerREG
+    IR: KZPowerREG = KZPowerREG()
+    UV: KZPowerREG = KZPowerREG()
     uptime: int = 0
     temperature: float = 0
 
 
 class MainWindow(QDialog):
-    def __init__(self, data_class_dict: dict):
+    def __init__(self, data_class_name: str):
+        data_class_dict = None
+        if data_class_name in globals():
+            data_class_dict = eval(data_class_name + "().__dict__")
+        else:
+            sys.exit(1)
         super(QDialog, self).__init__()
-        self.setGeometry(200, 50, 1500, 950)
+        self.setGeometry(150, 50, 1600, 950)
         # Create cool window
         self.graphWidget = pg.PlotWidget()
         self.graphWidget.setBackground('w')
@@ -66,14 +71,14 @@ class MainWindow(QDialog):
 
         # Заполняет массив кнопок
         for key in self.dictionary.keys():
-            if type(self.dictionary.get(key)) == type(0):
+            if isinstance(self.dictionary.get(key), (int, float)):
                 self.choice_buttons.append(QCheckBox(key))
             else:
                 key_values = self.dictionary.get(key).__dict__
                 for key_item in key_values:
                     self.choice_buttons.append(QCheckBox(f"{key}: {key_item}"))
 
-        num_of_lines = 0
+        self.num_of_lines = 0
         layout_h = QHBoxLayout()
         layout_v = QVBoxLayout()
         # Добавляем кнопки на экран
@@ -81,10 +86,10 @@ class MainWindow(QDialog):
         for button in self.choice_buttons:
             button.setChecked(False)
             layout_v.addWidget(button)
-            num_of_lines += 1
+            self.num_of_lines += 1
 
-        # Делаем разные (нет) цвета линий и маркеров
-        for i in range(num_of_lines):
+        # Делаем разные цвета линий и маркеров
+        for i in range(self.num_of_lines):
             line_color = colors[i]
             self.pen.append(pg.mkPen(color = line_color))
             self.data_lines.append(self.graphWidget.plot([i], [i+2], pen = self.pen[i], symbol='+', symbolSize=10, symbolBrush=line_color))
@@ -95,8 +100,8 @@ class MainWindow(QDialog):
 
         # TODO: записать данные из data-Class
         self.y = [] # - двумерный
-        self.x = [i for i in range(num_of_lines)]  # - одномерный
-        for i in range(num_of_lines):
+        self.x = [i for i in range(50)]  # - одномерный
+        for i in range(self.num_of_lines):
             self.y.append(self.x)
             self.shown_x.append(self.x)
         self.shown_y = self.y.copy()
@@ -107,12 +112,24 @@ class MainWindow(QDialog):
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.start()
 
-    def update_plot_data(self):
+    # Удаляет самые левые точки из графика
+    def delete_point(self):
         self.x = self.x[1:]
-        self.x.append(self.x[-1] + 1)
         for i in range(len(self.y)):
             self.y[i] = self.y[i][1:]
-            self.y[i].append(randint(0, 20))  # TODO: добавлять значения из data-Class
+
+    # Добавляет точки со значениями new_values в каждую линию
+    def add_point(self, new_values: list):
+        if len(new_values) != self.num_of_lines:
+            sys.exit(2)
+        self.x.append(self.x[-1] + 1)
+        for i in range(len(new_values)):
+            self.y[i].append(new_values[i])
+
+    # Обновляет данные для графика
+    def update_plot_data(self):
+        self.delete_point()
+        self.add_point([randint(0, 20) for _ in range(self.num_of_lines)])  # TODO: добавлять значения из data-Class
         for i in range(len(self.choice_buttons)):
             button = self.choice_buttons[i]
             if button.isChecked():
@@ -127,24 +144,22 @@ class MainWindow(QDialog):
 
 
 if __name__ == '__main__':
-    test = KZTelemetryREG(KZPowerREG(), KZPowerREG())
     app = QtWidgets.QApplication(sys.argv)
-    dataClass_dict = test.__dict__
-    test.temperature = 1111111111
 
-    """print(dataClass_dict)
     count = 0
-    for key in dataClass_dict.keys():
-        if isinstance(dataClass_dict.get(key), int):
+    """for key in dataClass_dict.keys():
+        if isinstance(dataClass_dict.get(key), int) or isinstance(dataClass_dict.get(key), float):
             print(f"key = {key}, value = {dataClass_dict.get(key)}")
             count += 1
         else:
             dataclass_key_dict = dataClass_dict.get(key).__dict__
             print(f"\n\n\ndataclass_key_dict  = {dataclass_key_dict}\n")
             for k in dataclass_key_dict.keys():
-                print(f"dataclass: {dataClass_dict.get(key)}, key: {key}_{k}, value: {dataclass_key_dict.get(k)}")
+                print(f"key: {key}_{k}, value: {dataclass_key_dict.get(k)}")
                 count += 1
     print(f"count = {count}")"""
-    w = MainWindow(dataClass_dict)
+
+    class_name = "KZTelemetryREG"
+    w = MainWindow(class_name)
     w.show()
     sys.exit(app.exec_())
