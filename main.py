@@ -1,9 +1,8 @@
 import sys
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QCheckBox, QDialog, QVBoxLayout, QHBoxLayout, QMainWindow
+from PyQt5.QtWidgets import QCheckBox, QDialog, QVBoxLayout, QHBoxLayout
 import pyqtgraph as pg
 from dataclasses import dataclass
-from random import randint
 
 # TODO: Заполнить списком цветов
 colors = ["aqua", "orange", "hotpink", "lightslategray", "yellow", "springgreen", "blueviolet", "orangered", "royalblue", "green", "plum", "paleturquoise", "palegreen", "navy", "turquoise", "mediumvioletred", "darkgoldenrod", "fuchsia", "steelblue", "lightcoral", "thistle", "khaki", "chartreuse", "teal", "saddlebrown", "violet", "lemonchiffon", "blue", "olive", "red"]
@@ -31,11 +30,22 @@ class KZTelemetryREG:
     temperature: float = 0
 
 
+def dict_into_list(data_class_object_dict: dict):
+    new_values_list = []
+    for key in data_class_object_dict.keys():
+        if isinstance(data_class_object_dict.get(key), (int, float)):
+            new_values_list.append(data_class_object_dict.get(key))
+        else:
+            dataclass_key_dict = data_class_object_dict.get(key).__dict__
+            for k in dataclass_key_dict.keys():
+                new_values_list.append(dataclass_key_dict.get(k))
+    return new_values_list
+
+
 class MainWindow(QDialog):
-    def __init__(self, data_class_name: str):
-        data_class_dict = None
+    def __init__(self, data_class_name: str, num_of_point_to_show: int = 50):
         if data_class_name in globals():
-            data_class_dict = eval(data_class_name + "().__dict__")
+            self.dictionary = eval(data_class_name + "().__dict__")
         else:
             sys.exit(1)
         super(QDialog, self).__init__()
@@ -51,25 +61,12 @@ class MainWindow(QDialog):
         self.graphWidget.showGrid(x=True, y=True)
         self.setWindowTitle("dataClass_graphics")
 
-
-        # Данные для графика
-        # Массив с массивом значений (длина y = num_of_lines)
-        #                            (длина каждого y[i] = число значений)
-        self.y = []         # - двумерный
-        self.x = []         # - одномерный
-        # Отображаемые значения
-        self.shown_x = []    # - двумерный
-        self.shown_y = []    # - двумерный
-
         # Структура, данные которой отображаются на графике
         self.data_lines = []
         self.pen = []
 
-        # Массив чек боксов
-        self.choice_buttons = []
-        self.dictionary = data_class_dict
-
         # Заполняет массив кнопок
+        self.choice_buttons = []
         for key in self.dictionary.keys():
             if isinstance(self.dictionary.get(key), (int, float)):
                 self.choice_buttons.append(QCheckBox(key))
@@ -98,38 +95,53 @@ class MainWindow(QDialog):
         layout_h.addLayout(layout_v)
         self.setLayout(layout_h)
 
-        # TODO: записать данные из data-Class
-        self.y = [] # - двумерный
-        self.x = [i for i in range(50)]  # - одномерный
+        # Данные для графика
+        # Массив с массивом значений (длина y = num_of_lines)
+        #                            (длина каждого y[i] = число значений)
+        self.y = []  # - двумерный
+        self.x = [0]  # - одномерный
+        # Отображаемые значения
+        self.shown_x = []  # - двумерный
+        self.shown_y = []  # - двумерный
+        self.num_of_point_to_show = num_of_point_to_show
+        # Записываем данные для первых точек каждой линии из data-Class
+        data_class_value_list = dict_into_list(self.dictionary)
+        for i in range(len(data_class_value_list)):
+            self.y.append([data_class_value_list[i]])
+
+
+        # Заполняем данные для отображения
         for i in range(self.num_of_lines):
-            self.y.append(self.x)
             self.shown_x.append(self.x)
         self.shown_y = self.y.copy()
 
-        # Set update settings
+        # Выставляем настройки для обновления графика
         self.timer = QtCore.QTimer()
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.start()
 
-    # Удаляет самые левые точки из графика
+
+
+    # Удаляет самые левые точки каждой линии из графика
     def delete_point(self):
         self.x = self.x[1:]
         for i in range(len(self.y)):
             self.y[i] = self.y[i][1:]
 
     # Добавляет точки со значениями new_values в каждую линию
-    def add_point(self, new_values: list):
-        if len(new_values) != self.num_of_lines:
-            sys.exit(2)
+    def add_point(self, data_class_dict: dict):
+        new_values = dict_into_list(data_class_dict)
         self.x.append(self.x[-1] + 1)
         for i in range(len(new_values)):
             self.y[i].append(new_values[i])
 
     # Обновляет данные для графика
     def update_plot_data(self):
-        self.delete_point()
-        self.add_point([randint(0, 20) for _ in range(self.num_of_lines)])  # TODO: добавлять значения из data-Class
+        if len(self.x) == self.num_of_point_to_show:
+            self.delete_point()
+        self.add_point(KZTelemetryREG().__dict__)   # TODO: добавлять значения из data-Class
+                                                    # (вместо KZTelemetryREG() нужно подставить новый объект dataClass)
         for i in range(len(self.choice_buttons)):
             button = self.choice_buttons[i]
             if button.isChecked():
@@ -145,20 +157,6 @@ class MainWindow(QDialog):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-
-    count = 0
-    """for key in dataClass_dict.keys():
-        if isinstance(dataClass_dict.get(key), int) or isinstance(dataClass_dict.get(key), float):
-            print(f"key = {key}, value = {dataClass_dict.get(key)}")
-            count += 1
-        else:
-            dataclass_key_dict = dataClass_dict.get(key).__dict__
-            print(f"\n\n\ndataclass_key_dict  = {dataclass_key_dict}\n")
-            for k in dataclass_key_dict.keys():
-                print(f"key: {key}_{k}, value: {dataclass_key_dict.get(k)}")
-                count += 1
-    print(f"count = {count}")"""
-
     class_name = "KZTelemetryREG"
     w = MainWindow(class_name)
     w.show()
