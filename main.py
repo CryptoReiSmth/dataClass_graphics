@@ -5,7 +5,16 @@ import pyqtgraph as pg
 from dataclasses import dataclass
 
 # TODO: Заполнить списком цветов
-colors = ["aqua", "orange", "hotpink", "lightslategray", "yellow", "springgreen", "blueviolet", "orangered", "royalblue", "green", "plum", "paleturquoise", "palegreen", "navy", "turquoise", "mediumvioletred", "darkgoldenrod", "fuchsia", "steelblue", "lightcoral", "thistle", "khaki", "chartreuse", "teal", "saddlebrown", "violet", "lemonchiffon", "blue", "olive", "red"]
+COLORS = ["aqua", "orange", "hotpink", "lightslategray", "yellow", "springgreen", "blueviolet", "orangered",
+          "royalblue", "green", "plum", "paleturquoise", "palegreen", "navy", "turquoise", "mediumvioletred",
+          "darkgoldenrod", "fuchsia", "steelblue", "lightcoral", "thistle", "khaki", "chartreuse", "teal",
+          "saddlebrown", "violet", "lemonchiffon", "blue", "olive", "red"]
+COLOR_NAMES =  ["aqua", "orange", "hot pink", "light slate gray", "yellow", "spring green", "blue violet", "orange-red",
+          "royal blue", "green", "plum", "pale turquoise", "pale green", "navy", "turquoise", "medium violet-red",
+          "dark goldenrod", "fuchsia", "steel blue", "light coral", "thistle", "khaki", "chartreuse", "teal",
+          "saddle brown", "violet", "lemon chiffon", "blue", "olive", "red"]
+
+
 @dataclass
 class KZPowerREG:
     UC: float = 0
@@ -67,13 +76,16 @@ class MainWindow(QDialog):
 
         # Заполняет массив кнопок
         self.choice_buttons = []
+        color_iterator = 0
         for key in self.dictionary.keys():
             if isinstance(self.dictionary.get(key), (int, float)):
-                self.choice_buttons.append(QCheckBox(key))
+                self.choice_buttons.append(QCheckBox(f"{key}, \tcolor - {COLOR_NAMES[color_iterator]}"))
+                color_iterator += 1
             else:
                 key_values = self.dictionary.get(key).__dict__
                 for key_item in key_values:
-                    self.choice_buttons.append(QCheckBox(f"{key}: {key_item}"))
+                    self.choice_buttons.append(QCheckBox(f"{key}: {key_item}, \tcolor - {COLOR_NAMES[color_iterator]}"))
+                    color_iterator += 1
 
         self.num_of_lines = 0
         layout_h = QHBoxLayout()
@@ -87,7 +99,7 @@ class MainWindow(QDialog):
 
         # Делаем разные цвета линий и маркеров
         for i in range(self.num_of_lines):
-            line_color = colors[i]
+            line_color = COLORS[i]
             self.pen.append(pg.mkPen(color = line_color))
             self.data_lines.append(self.graphWidget.plot([i], [i+2], pen = self.pen[i], symbol='+', symbolSize=10, symbolBrush=line_color))
 
