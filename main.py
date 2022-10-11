@@ -1,4 +1,5 @@
 import sys
+
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QCheckBox, QDialog, QVBoxLayout, QHBoxLayout
 import pyqtgraph as pg
@@ -13,6 +14,12 @@ COLOR_NAMES =  ["aqua", "orange", "hot pink", "light slate gray", "yellow", "spr
           "royal blue", "green", "plum", "pale turquoise", "pale green", "navy", "turquoise", "medium violet-red",
           "dark goldenrod", "fuchsia", "steel blue", "light coral", "thistle", "khaki", "chartreuse", "teal",
           "saddle brown", "violet", "lemon chiffon", "blue", "olive", "red"]
+COLORS_RGB = ["rgb( 0, 255, 255)", "rgb(255, 165, 0)", "rgb(255, 105, 180)", "rgb(119, 136, 153)", "rgb(255, 255, 0)",
+              "rgb( 0, 255, 127)", "rgb(138, 43, 226)", "rgb(255, 69, 0)", "rgb( 65, 105, 225)", "rgb( 0, 128, 0)",
+              "rgb(221, 160, 221)", "rgb(175, 238, 238)", "rgb(152, 251, 152)", "rgb( 0, 0, 128)", "rgb( 64, 224, 208)",
+              "rgb(199, 21, 133)", "rgb(184, 134, 11)", "rgb(255, 0, 255)", "rgb( 70, 130, 180)", "rgb(240, 128, 128)",
+              "rgb(216, 191, 216)", "rgb(240, 230, 140)", "rgb(127, 255, 0)", "rgb( 0, 128, 128)", "rgb(139, 69, 19)",
+              "rgb(238, 130, 238)", "rgb(255, 250, 205)", "rgb( 0, 0, 255)", "rgb(128, 128, 0)", "rgb(255, 0, 0)"]
 
 
 @dataclass
@@ -79,12 +86,18 @@ class MainWindow(QDialog):
         color_iterator = 0
         for key in self.dictionary.keys():
             if isinstance(self.dictionary.get(key), (int, float)):
-                self.choice_buttons.append(QCheckBox(f"{key}, \tcolor - {COLOR_NAMES[color_iterator]}"))
+                current_button = QCheckBox(f"{key}, color - {COLOR_NAMES[color_iterator]}")
+                current_style = "QCheckBox::indicator:checked {background-color: " +  COLORS_RGB[color_iterator] + ";}"
+                current_button.setStyleSheet(current_style)
+                self.choice_buttons.append(current_button)
                 color_iterator += 1
             else:
                 key_values = self.dictionary.get(key).__dict__
                 for key_item in key_values:
-                    self.choice_buttons.append(QCheckBox(f"{key}: {key_item}, \tcolor - {COLOR_NAMES[color_iterator]}"))
+                    current_button = QCheckBox(f"{key}: {key_item}, color - {COLOR_NAMES[color_iterator]}")
+                    current_style = "QCheckBox::indicator:checked {background-color: " + COLORS_RGB[color_iterator] + ";}"
+                    current_button.setStyleSheet(current_style)
+                    self.choice_buttons.append(current_button)
                     color_iterator += 1
 
         self.num_of_lines = 0
