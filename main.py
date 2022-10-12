@@ -1,19 +1,16 @@
 import sys
-
+import time
+from typing import Union
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QCheckBox, QDialog, QVBoxLayout, QHBoxLayout
 import pyqtgraph as pg
 from dataclasses import dataclass
+from random import randint
 
-# TODO: Заполнить списком цветов
 COLORS = ["aqua", "orange", "hotpink", "lightslategray", "yellow", "springgreen", "blueviolet", "orangered",
           "royalblue", "green", "plum", "paleturquoise", "palegreen", "navy", "turquoise", "mediumvioletred",
           "darkgoldenrod", "fuchsia", "steelblue", "lightcoral", "thistle", "khaki", "chartreuse", "teal",
           "saddlebrown", "violet", "lemonchiffon", "blue", "olive", "red"]
-COLOR_NAMES =  ["aqua", "orange", "hot pink", "light slate gray", "yellow", "spring green", "blue violet", "orange-red",
-          "royal blue", "green", "plum", "pale turquoise", "pale green", "navy", "turquoise", "medium violet-red",
-          "dark goldenrod", "fuchsia", "steel blue", "light coral", "thistle", "khaki", "chartreuse", "teal",
-          "saddle brown", "violet", "lemon chiffon", "blue", "olive", "red"]
 COLORS_RGB = ["rgb( 0, 255, 255)", "rgb(255, 165, 0)", "rgb(255, 105, 180)", "rgb(119, 136, 153)", "rgb(255, 255, 0)",
               "rgb( 0, 255, 127)", "rgb(138, 43, 226)", "rgb(255, 69, 0)", "rgb( 65, 105, 225)", "rgb( 0, 128, 0)",
               "rgb(221, 160, 221)", "rgb(175, 238, 238)", "rgb(152, 251, 152)", "rgb( 0, 0, 128)", "rgb( 64, 224, 208)",
@@ -86,7 +83,7 @@ class MainWindow(QDialog):
         color_iterator = 0
         for key in self.dictionary.keys():
             if isinstance(self.dictionary.get(key), (int, float)):
-                current_button = QCheckBox(f"{key}, color - {COLOR_NAMES[color_iterator]}")
+                current_button = QCheckBox(f"{key}")
                 current_style = "QCheckBox::indicator:checked {background-color: " +  COLORS_RGB[color_iterator] + ";}"
                 current_button.setStyleSheet(current_style)
                 self.choice_buttons.append(current_button)
@@ -94,7 +91,7 @@ class MainWindow(QDialog):
             else:
                 key_values = self.dictionary.get(key).__dict__
                 for key_item in key_values:
-                    current_button = QCheckBox(f"{key}: {key_item}, color - {COLOR_NAMES[color_iterator]}")
+                    current_button = QCheckBox(f"{key}: {key_item}")
                     current_style = "QCheckBox::indicator:checked {background-color: " + COLORS_RGB[color_iterator] + ";}"
                     current_button.setStyleSheet(current_style)
                     self.choice_buttons.append(current_button)
@@ -125,6 +122,8 @@ class MainWindow(QDialog):
         #                            (длина каждого y[i] = число значений)
         self.y = []  # - двумерный
         self.x = [0]  # - одномерный
+        # Значения последних точек линий
+        self.last_y = []  # - одномерный
         # Отображаемые значения
         self.shown_x = []  # - двумерный
         self.shown_y = []  # - двумерный
@@ -147,7 +146,6 @@ class MainWindow(QDialog):
         self.timer.start()
 
 
-
     # Удаляет самые левые точки каждой линии из графика
     def delete_point(self):
         self.x = self.x[1:]
@@ -155,11 +153,21 @@ class MainWindow(QDialog):
             self.y[i] = self.y[i][1:]
 
     # Добавляет точки со значениями new_values в каждую линию
-    def add_point(self, data_class_dict: dict):
-        new_values = dict_into_list(data_class_dict)
-        self.x.append(self.x[-1] + 1)
-        for i in range(len(new_values)):
-            self.y[i].append(new_values[i])
+    def add_point(self, data_class_values: Union[dict, list] = None):
+        current_time = time.time() - self.start_time
+        self.x.append(int(current_time))
+        if isinstance(data_class_values, list):
+            new_values = data_class_values.copy()
+        else:
+            new_values = dict_into_list(data_class_values)
+
+        if data_class_values is None:
+            self.add_point(self.last_y)
+        else:
+            self.last_y = []
+            for i in range(len(new_values)):
+                self.last_y.append(self.y[i][-1])
+                self.y[i].append(new_values[i])
 
     # Обновляет данные для графика
     def update_plot_data(self):
